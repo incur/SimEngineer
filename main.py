@@ -16,6 +16,7 @@ def plot(vessels: list[Container], wfi: WFIManager):
     ax2.plot(vessels[0].track_volume)
     ax2.plot(vessels[1].track_volume)
     ax3.plot(wfi.track_capacity)
+    ax3.plot(wfi.track_reserved)
 
     n_ticks = 20
     x = np.arange(SIM_TIME)
@@ -49,7 +50,8 @@ def wheel(env, vessels, wfi):
             env.process(vessels[1].sip())
             env.process(vessels[0].sip())
             env.process(vessels[0].prod_lb())
-            env.process(vessels[1].prod(vessels[0]))
+            # env.process(vessels[1].prod(vessels[0]))
+            env.process(vessels[0].prod2(vessels[1]))
 
         wfi.cycle()
         for vessel in vessels:

@@ -10,11 +10,13 @@ class WFIManager:
         self.reserved_capacity = 0
         self.container_queue = []
         self.track_capacity = np.zeros(sT)
+        self.track_reserved = np.zeros(sT)
 
     def cycle(self):
         current_time = int(self.env.now)
         if current_time < self.sT:
             self.track_capacity[current_time] = self.available_capacity
+            self.track_reserved[current_time] = self.reserved_capacity
 
     def request_wfi(self, amount):
         if amount <= self.available_capacity:
