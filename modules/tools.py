@@ -3,7 +3,7 @@ import simpy
 def debug(env: simpy.Environment, function: str, msg: str):
     time = convertTime(env.now)
     time = f'{time[0]}:{time[1]:02d}:{time[2]:02d}'
-    print(f'{time: >10}{"": ^5}{function}{"": ^5}{msg}')
+    print(f'{time: ^20}{function: <25}{msg}')
 
 def convertTime(value: int | float | tuple) -> int | tuple | bool:
     match value:

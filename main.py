@@ -45,10 +45,10 @@ def main():
 def wheel(env, vessels, wfi):
     while True:
         if env.now == 0:
-            env.process(vessels[0].cip())
-            env.process(vessels[1].cip())
-            env.process(vessels[1].sip())
-            env.process(vessels[0].sip())
+            env.process(vessels[0].cip(duration=convertTime((35, 0))))
+            env.process(vessels[1].cip(duration=convertTime((35, 0))))
+            env.process(vessels[1].sip(duration=convertTime((30, 0))))
+            env.process(vessels[0].sip(duration=convertTime((30, 0))))
             env.process(vessels[0].prod_lb())
             env.process(vessels[1].prod(vessels[0]))
 
