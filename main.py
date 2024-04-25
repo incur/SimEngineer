@@ -50,8 +50,7 @@ def wheel(env, vessels, wfi):
             env.process(vessels[1].sip())
             env.process(vessels[0].sip())
             env.process(vessels[0].prod_lb())
-            # env.process(vessels[1].prod(vessels[0]))
-            env.process(vessels[0].prod2(vessels[1]))
+            env.process(vessels[1].prod(vessels[0]))
 
         wfi.cycle()
         for vessel in vessels:

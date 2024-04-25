@@ -5,6 +5,7 @@ from modules.wfi_manager import WFIManager
 
 import simpy
 import numpy as np
+from typing import Self
 
 class Container:
     def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager) -> None:
@@ -85,84 +86,44 @@ class Container:
             yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=2))
             debug(self.env, f'PROD', f'{self.name} - Produktion beendet')
 
-    def prod(self, donator):
-        target_volume = 30
-        
-        while not self.state == HYG_STAT.sanitized:
+    def prod(self, donator: Self):
+        while not self.state == HYG_STAT.sanitized or not donator.state == HYG_STAT.production:
             yield self.env.timeout(1)
 
-        with self.resource.request() as req:
-            yield req
-            
-            yield self.env.process(change_state(self, HYG_STAT.production))
-            debug(self.env, f'PROD', f'{self.name} - Produktion gestartet')
+        with donator.resource.request() as don_req:
+            yield don_req
 
-            yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=10))
-            yield self.env.process(self.transfer(donator))
-            rest_volume = target_volume - self.volume.level
-            yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=rest_volume))
-
-            debug(self.env, f'PROD', f'{self.name} - Produktion beendet')
-
-    def prod2(self, receiver):
-        while not self.state == HYG_STAT.sanitized:
-            yield self.env.timeout(1)
-
-        while not receiver.state == HYG_STAT.sanitized:
-            yield self.env.timeout(1)
-
-        with self.resource.request() as own_req:
-            yield own_req
-
-            with receiver.resource.request() as rec_req:
-                yield rec_req
+            with self.resource.request() as own_req:
+                yield own_req
 
                 target_volume = 30
 
                 yield self.env.process(change_state(self, HYG_STAT.production))
-                yield self.env.process(change_state(receiver, HYG_STAT.production))
-                debug(self.env, f'PROD', f'{self.name} - Produktion gestartet')
+                debug(self.env, f'PROD', f'{donator.name} - {self.name} - Produktion gestartet')
 
-                yield self.env.process(receiver.fill(wfi_rate=10, fill_rate=12, amount=10))     # Abfüllbehälter vordosieren
-                yield self.env.process(self.transfer2(receiver))                                # Sole Transfer
-                yield self.env.timeout(convertTime((1, 0)))
-                yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=0.5))        # Spülzyklus 1
-                yield self.env.process(self.transfer2(receiver))                                # Transfer Zyklus
-                yield self.env.timeout(convertTime((1, 0)))
-                yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=0.5))        # Spülzyklus 2
-                yield self.env.process(self.transfer2(receiver))                                # Transfer Zyklus
-                yield self.env.timeout(convertTime((1, 0)))
-                yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=0.5))        # Spülzyklus 3
-                yield self.env.process(self.transfer2(receiver))                                # Transfer Zyklus
+                yield self.env.process(self.fill(wfi_rate=19, fill_rate=12, amount=10))             # Abfüllbehälter vordosieren
+                yield self.env.process(self.transfer(donator))                                      # Sole Transfer
                 yield self.env.timeout(convertTime((1, 0)))
 
-                rest_volume = target_volume - receiver.volume.level
-                yield self.env.process(receiver.fill(wfi_rate=10, fill_rate=12, amount=rest_volume))     # Abfüllbehälter enddosieren
+                for _ in range(3):
+                    yield self.env.process(donator.fill(wfi_rate=10, fill_rate=12, amount=0.5))     # Spülzyklus 
+                    yield self.env.process(donator.transfer(donator))                               # Transfer zyklus
+                    yield self.env.timeout(convertTime((1, 0)))
 
+                yield self.env.process(change_state(donator, HYG_STAT.dirty))
 
+                rest_volume = target_volume - self.volume.level
+                yield self.env.process(self.fill(wfi_rate=10, fill_rate=12, amount=rest_volume))     # Abfüllbehälter enddosieren
 
-    def transfer(self, donator):
+    def transfer(self, donator: Self):
         transfer_volume = donator.volume.level
-        transfer_rate = 10
-        transfer_time = int((transfer_volume / transfer_rate) * convertTime((1, 0, 0)))
-
-        with donator.resource.request() as req:
-            yield req
-            for _ in range(transfer_time):
-                step_volume = transfer_volume / transfer_time
-                yield donator.volume.get(step_volume)
-                yield self.volume.put(step_volume)
-                yield self.env.timeout(1)
-
-    def transfer2(self, receiver):
-        transfer_volume = self.volume.level
         transfer_rate = 10
         transfer_time = int((transfer_volume / transfer_rate) * convertTime((1, 0, 0)))
 
         for _ in range(transfer_time):
             step_volume = transfer_volume / transfer_time
-            yield self.volume.get(step_volume)
-            yield receiver.volume.put(step_volume)
+            yield donator.volume.get(step_volume)
+            yield self.volume.put(step_volume)
             yield self.env.timeout(1)
 
     def fill(self, wfi_rate: int, fill_rate: int, amount: int):
