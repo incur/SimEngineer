@@ -25,5 +25,3 @@ def change_state(container, new_state):
         yield container.env.timeout(time_required)
         container.state = new_state
         debug(container.env, f'Status Change', f'{container.name} - {container.state}')
-    # else:
-    #     debug(container.env, f'Status Change', f'{container.name} - Statuswechsel von {container.state} zu {new_state} ist nicht erlaubt.')

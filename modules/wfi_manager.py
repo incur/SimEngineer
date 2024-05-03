@@ -1,22 +1,23 @@
 import simpy
 import numpy as np
+from modules.observer import Observer
 
 class WFIManager:
-    def __init__(self, env: simpy.Environment, sT: int, total_capacity: int) -> None:
+    def __init__(self, env: simpy.Environment, sT: int, total_capacity: int, observer: Observer) -> None:
         self.env = env
         self.sT = sT
+        self.name = 'WFI-Manager'
         self.total_capacity = total_capacity
         self.available_capacity = total_capacity
         self.reserved_capacity = 0
         self.container_queue = []
-        self.track_capacity = np.zeros(sT)
-        self.track_reserved = np.zeros(sT)
+        observer.add_variable(f'capacity', self, 'available_capacity')
+        observer.add_variable(f'reserved', self, 'reserved_capacity')
 
     def cycle(self):
         current_time = int(self.env.now)
         if current_time < self.sT:
-            self.track_capacity[current_time] = self.available_capacity
-            self.track_reserved[current_time] = self.reserved_capacity
+            pass
 
     def request_wfi(self, amount):
         if amount <= self.available_capacity:
