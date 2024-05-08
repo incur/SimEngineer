@@ -20,6 +20,9 @@ class WFIManager:
             pass
 
     def request_wfi(self, amount):
+        # TODO: Implementiere ein priority Flag der WFI reserviert obwohl nicht genügend 
+        # verfügbar ist. available = max(0, available - amount)
+        # Wichtig für das CEW verhalten.
         if amount <= self.available_capacity:
             self.available_capacity -= amount
             self.reserved_capacity += amount
@@ -30,15 +33,3 @@ class WFIManager:
     def release_wfi(self, amount):
         self.available_capacity += amount
         self.reserved_capacity -= amount
-
-    def monitor_wfi(self):
-        while True:
-            # Überwache und verwalte die WFI-Resource
-            yield self.env.timeout(1) # Überprüfe jede sekunde
-            if self.available_capacity < self.total_capacity:
-                for container in self.container_queue:
-                    if self.request_wfi(container.required_wfi):
-                        container.process = self.env.process(container.clean())
-                        self.container_queue.remove(container)
-                        break
-

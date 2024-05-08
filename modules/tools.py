@@ -24,3 +24,15 @@ def convertTime(value: int | float | tuple) -> int | tuple | bool:
             return (hour, minute, seconds)
         case _:
             return False
+        
+def aufteilen(integer: int, gewichtungen: list[int]):
+    gesamtsumme = sum(gewichtungen)
+    anteile = []
+    for gewicht in gewichtungen:
+        anteil = integer * gewicht / gesamtsumme
+        gerundeter_anteil = round(anteil)
+        anteile.append(int(gerundeter_anteil))
+
+    anteile[-1] += integer - sum(anteile)
+
+    return anteile
