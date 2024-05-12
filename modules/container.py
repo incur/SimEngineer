@@ -1,6 +1,6 @@
 import simpy.resources
 from modules.states import HYG_STAT, change_state
-from modules.tools import debug, convertTime, aufteilen
+from modules.tools import debug, convertTime, aufteilen, generate_random_time
 from modules.wfi_manager import WFIManager
 from modules.observer import Observer
 from modules.cip import cip_vessel
@@ -41,33 +41,9 @@ class Container:
         yield self.env.timeout(duration)
         self.wfi_manager.release_wfi(require_wfi)
 
-    def cip(self, duration: int):
-        required_wfi = 30
-        # TODO: Die Spülzeit ist nicht genau ein drittel. Mehr Prozessdaten sammeln
-        time = duration
-        wfi_time = time / 3
-        dry_time = time - wfi_time
+    def sip(self):
+        duration = generate_random_time(self.sip_durations)
 
-        with self.resource.request() as req:
-            yield req
-
-            yield self.env.process(change_state(self, HYG_STAT.cleaning))
-            debug(self.env, f'CIP', f'{self.name} - Reinigung gestartet')
-
-            while not self.wfi_manager.request_wfi(required_wfi):
-                yield self.env.timeout(1)
-
-
-            yield self.env.timeout(wfi_time)
-            self.wfi_manager.release_wfi(required_wfi)
-
-            yield self.env.timeout(dry_time)
-
-            debug(self.env, f'CIP', f'{self.name} - Reinigung beendet')
-            yield self.env.process(change_state(self, HYG_STAT.cleaned))
-            self.last_clean_time = int(self.env.now)
-
-    def sip(self, duration: int):
         while not self.state == HYG_STAT.cleaned:
             yield self.env.timeout(1)
 

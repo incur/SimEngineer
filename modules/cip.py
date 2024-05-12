@@ -1,18 +1,18 @@
-from modules.tools import debug, convertTime, aufteilen
+from modules.tools import debug, convertTime, aufteilen, generate_random_time
 from modules.states import HYG_STAT, change_state
 
-class CIPVesselError(Exception):
+class CIPError(Exception):
     pass
 
 
-class MissingKeyError(CIPVesselError):
+class MissingKeyError(CIPError):
     def __init__(self, key, dictionary):
         super().__init__(f"Schlüssel '{key}' nicht in '{dictionary}' gefunden")
 
 
 def cip_vessel(self, LB: bool, wfi_rates, fill_rates, durations):
     start_time = self.env.now
-    total_duration = durations['mean']
+    total_duration = generate_random_time(durations)
 
     required_keys = {
         True: ['UV043'],

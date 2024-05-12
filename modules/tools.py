@@ -1,4 +1,5 @@
 import simpy
+import random
 
 def debug(env: simpy.Environment, function: str, msg: str):
     time = convertTime(env.now)
@@ -36,3 +37,10 @@ def aufteilen(integer: int, gewichtungen: list[int]):
     anteile[-1] += integer - sum(anteile)
 
     return anteile
+
+def generate_random_time(durations):
+    standardabweichung = durations['mean'] / 5
+    zufallszahl = random.gauss(durations['mean'], standardabweichung)
+    while zufallszahl < durations['lower'] or zufallszahl > durations['upper']:
+        zufallszahl = random.gauss(durations['mean'], standardabweichung)
+    return round(zufallszahl)

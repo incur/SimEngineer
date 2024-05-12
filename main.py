@@ -30,11 +30,11 @@ def wheel(env, observer):
         
         if current_time == 0:
             env.process(Lösebehälter.cip_beh())
-            env.process(Abfüllbehälter_A.cip_beh())
-            env.process(Abfüllbehälter_A.sip(duration=convertTime((30, 0))))
-            env.process(Lösebehälter.sip(duration=convertTime((30, 0))))
-            env.process(Lösebehälter.prod_lb())
-            env.process(Abfüllbehälter_A.prod(Lösebehälter))
+            # env.process(Abfüllbehälter_A.cip_beh())
+            # env.process(Abfüllbehälter_A.sip(duration=convertTime((30, 0))))
+            env.process(Lösebehälter.sip())
+            # env.process(Lösebehälter.prod_lb())
+            # env.process(Abfüllbehälter_A.prod(Lösebehälter))
 
         wfi.cycle()
         Lösebehälter.cycle()
