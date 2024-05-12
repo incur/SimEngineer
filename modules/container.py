@@ -211,26 +211,74 @@ class AB(Vessel):
             yield self.env.timeout(1)
 
 class Partikel(Container):
-    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer, capacity: int) -> None:
+    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer) -> None:
         super().__init__(env, sT, name, wfi_manager, observer)
 
         self.rate_wfi_uv373 = 10    # 90°C für CIP
+
+        self.cip_durations = {
+            'lower': convertTime((23, 13)),
+            'mean': convertTime((23, 36)),
+            'upper': convertTime((25, 30)),
+        }
+
+        self.sip_durations = {
+            'lower': convertTime((22, 53)),
+            'mean': convertTime((23, 49)),
+            'upper': convertTime((25, 39)),
+        }
 
 class Sole_Transfer(Container):
-    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer, capacity: int) -> None:
+    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer) -> None:
         super().__init__(env, sT, name, wfi_manager, observer)
 
         self.rate_wfi_uv373 = 10    # 90°C für CIP
 
+        self.cip_durations = {
+            'lower': convertTime((15, 34)),
+            'mean': convertTime((15, 47)),
+            'upper': convertTime((16, 0)),
+        }
+
+        self.sip_durations = {
+            'lower': convertTime((25, 1)),
+            'mean': convertTime((25, 38)),
+            'upper': convertTime((39, 29)),
+        }
+
 class Keimfilter(Container):
-    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer, capacity: int) -> None:
+    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer) -> None:
         super().__init__(env, sT, name, wfi_manager, observer)
 
         self.rate_wfi_uv373 = 10   # 90°C für CIP
         self.rate_wfi_uv374 = 2    # 20°C für filter kühlen
 
+        self.cip_durations = {
+            'lower': convertTime((58, 49)),
+            'mean': convertTime((74, 7)),
+            'upper': convertTime((122, 29)),
+        }
+
+        self.sip_durations = {
+            'lower': convertTime((25, 52)),
+            'mean': convertTime((26, 52)),
+            'upper': convertTime((41, 7)),
+        }
+
 class VK(Container):
-    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer, capacity: int) -> None:
+    def __init__(self, env: simpy.Environment, sT: int, name: str, wfi_manager: WFIManager, observer: Observer) -> None:
         super().__init__(env, sT, name, wfi_manager, observer)
 
         self.rate_wfi_uv373 = 10    # 90°C für CIP
+
+        self.cip_durations = {
+            'lower': convertTime((17, 21)),
+            'mean': convertTime((17, 32)),
+            'upper': convertTime((17, 50)),
+        }
+
+        self.sip_durations = {
+            'lower': convertTime((25, 25)),
+            'mean': convertTime((25, 43)),
+            'upper': convertTime((26, 14)),
+        }

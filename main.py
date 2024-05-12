@@ -1,6 +1,6 @@
 from modules.tools import convertTime, debug
 from modules.wfi_manager import WFIManager
-from modules.container import Container, LB, AB
+from modules.container import Container, LB, AB, Partikel, Sole_Transfer, Keimfilter, VK
 from modules.make_plots import plot
 from modules.observer import Observer
 from modules.states import HYG_STAT
@@ -23,7 +23,13 @@ def main():
 def wheel(env, observer):
     wfi = WFIManager(env, SIM_TIME, 45, observer)
     Lösebehälter = LB(env, SIM_TIME, '2010_A', wfi, observer)
+    Partikelfiltration = Partikel(env, SIM_TIME, '2011_A', wfi, observer)
+    Transferstrecke = Sole_Transfer(env, SIM_TIME, '2012_A', wfi, observer)
     Abfüllbehälter_A = AB(env, SIM_TIME, '2020_A', wfi, observer)
+    Abfüllbehälter_B = AB(env, SIM_TIME, '2020_B', wfi, observer)
+    Keimfilter_A = Keimfilter(env, SIM_TIME, '2021_A', wfi, observer)
+    Keimfilter_B = Keimfilter(env, SIM_TIME, '2021_B', wfi, observer)
+    Ventilknoten = VK(env, SIM_TIME, '2030_A', wfi, observer)
 
     while True:
         current_time = int(env.now)
