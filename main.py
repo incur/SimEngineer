@@ -21,7 +21,7 @@ def main():
     plot(observer)
 
 def wheel(env, observer):
-    wfi = WFIManager(env, SIM_TIME, 50, observer)
+    wfi = WFIManager(env, SIM_TIME, 45, observer)
     Lösebehälter = LB(env, SIM_TIME, '2010_A', wfi, observer)
     Abfüllbehälter_A = AB(env, SIM_TIME, '2020_A', wfi, observer)
 
