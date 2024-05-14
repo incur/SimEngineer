@@ -63,7 +63,7 @@ def cip_vessel(self, LB: bool, wfi_rates, fill_rates, durations):
     # with self.resource.request() as req:
     #     yield req
 
-    yield self.env.process(change_state(self, HYG_STAT.cleaning))
+    yield self.env.process(change_state(self, HYG_STAT.cleaning, 'cip'))
     debug(self.env, f'CIP', f'{self.name} - Reinigung gestartet')
 
     cycle = 0
@@ -144,7 +144,7 @@ def cip_vessel(self, LB: bool, wfi_rates, fill_rates, durations):
         cycle += 1
 
     debug(self.env, f'CIP', f'{self.name} - Reinigung beendet, Soll: {total_duration}, Ist: {self.env.now - start_time}')
-    yield self.env.process(change_state(self, HYG_STAT.cleaned))
+    yield self.env.process(change_state(self, HYG_STAT.cleaned, 'cip'))
     self.last_clean_time = int(self.env.now)
 
 
@@ -175,7 +175,7 @@ def cip_transf(self, wfi_rates, durations):
     # with self.resource.request() as req:
     #     yield req
 
-    yield self.env.process(change_state(self, HYG_STAT.cleaning))
+    yield self.env.process(change_state(self, HYG_STAT.cleaning, 'cip'))
     debug(self.env, f'CIP', f'{self.name} - Reinigung gestartet')
 
     cycle = 0
@@ -221,7 +221,7 @@ def cip_transf(self, wfi_rates, durations):
         cycle += 1
 
     debug(self.env, f'CIP', f'{self.name} - Reinigung beendet, Soll: {total_duration}, Ist: {self.env.now - start_time}')
-    yield self.env.process(change_state(self, HYG_STAT.cleaned))
+    yield self.env.process(change_state(self, HYG_STAT.cleaned, 'cip'))
     self.last_clean_time = int(self.env.now)
 
 def cip_filter(self, wfi_rates, durations):
@@ -252,7 +252,7 @@ def cip_filter(self, wfi_rates, durations):
     # with self.resource.request() as req:
     #     yield req
 
-    yield self.env.process(change_state(self, HYG_STAT.cleaning))
+    yield self.env.process(change_state(self, HYG_STAT.cleaning, 'cip'))
     debug(self.env, f'CIP', f'{self.name} - Reinigung gestartet')
 
     cycle = 0
@@ -306,7 +306,7 @@ def cip_filter(self, wfi_rates, durations):
         cycle += 1
 
     debug(self.env, f'CIP', f'{self.name} - Reinigung beendet, Soll: {total_duration}, Ist: {self.env.now - start_time}')
-    yield self.env.process(change_state(self, HYG_STAT.cleaned))
+    yield self.env.process(change_state(self, HYG_STAT.cleaned, 'cip'))
     self.last_clean_time = int(self.env.now)
 
 def cip_knoten(self, wfi_rates, durations):
@@ -338,7 +338,7 @@ def cip_knoten(self, wfi_rates, durations):
     # with self.resource.request() as req:
     #     yield req
 
-    yield self.env.process(change_state(self, HYG_STAT.cleaning))
+    yield self.env.process(change_state(self, HYG_STAT.cleaning, 'cip'))
     debug(self.env, f'CIP', f'{self.name} - Reinigung gestartet')
 
     cycle = 0
@@ -390,19 +390,22 @@ def cip_knoten(self, wfi_rates, durations):
         cycle += 1
 
     debug(self.env, f'CIP', f'{self.name} - Reinigung beendet, Soll: {total_duration}, Ist: {self.env.now - start_time}')
-    yield self.env.process(change_state(self, HYG_STAT.cleaned))
+    yield self.env.process(change_state(self, HYG_STAT.cleaned, 'cip'))
     self.last_clean_time = int(self.env.now)
 
 def sip_default(self, durations):
     total_duration = generate_random_time(durations)
 
-    yield self.env.process(change_state(self, HYG_STAT.sanitizing))
+    while not self.state == HYG_STAT.cleaned:
+        yield self.env.timeout(convertTime((0, 1)))
+
+    yield self.env.process(change_state(self, HYG_STAT.sanitizing, 'sip'))
     debug(self.env, f'SIP', f'{self.name} - Sanitisierung gestartet')
 
     yield self.env.timeout(total_duration)
 
     debug(self.env, f'SIP', f'{self.name} - Sanitisierung beendet')
-    yield self.env.process(change_state(self, HYG_STAT.sanitized))
-    self.last_clean_time = int(self.env.now)
+    yield self.env.process(change_state(self, HYG_STAT.sanitized, 'sip'))
+    self.last_sip_time = int(self.env.now)
 
 

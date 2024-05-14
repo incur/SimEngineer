@@ -16,22 +16,29 @@ class Container:
         self.env = env
         self.sT = sT
         self.state = HYG_STAT.dirty
+        self.sip_state = HYG_STAT.dirty
         self.resource = simpy.Resource(env, capacity=1)
         self.observer = observer
         self.routes = routes
         self.wfi_manager = wfi_manager
-        self.cht = convertTime((200, 0, 0))
+        self.cht = convertTime((72, 0, 0))
         self.last_clean_time = 0
+        self.last_sip_time = 0
 
-        observer.add_variable(f'state', self, 'state.value')
+        observer.add_variable(f'cip state', self, 'state.value')
+        observer.add_variable(f'sip state', self, 'sip_state.value')
 
     def cycle(self):
         current_time = int(self.env.now)
         if current_time < self.sT:
             # CHT Monitoring
-            if self.state in [HYG_STAT.cleaned, HYG_STAT.sanitized] and current_time - self.last_clean_time >= self.cht:
+            if self.state in [HYG_STAT.cleaned] and current_time - self.last_clean_time >= self.cht:
                 self.state = HYG_STAT.dirty
                 debug(self.env, 'Container', f'{self.name} - Reinigungssstandzeit überschritten')
+
+            if self.sip_state in [HYG_STAT.sanitized] and current_time - self.last_sip_time >= self.cht:
+                self.sip_state = HYG_STAT.dirty
+                debug(self.env, 'Container', f'{self.name} - Sterilstandzeit überschritten')
 
     def flow_time(self, fill_rate, amount):
         amount = amount / 1000
@@ -115,30 +122,24 @@ class LB(Vessel):
                 yield req1
 
                 start = self.env.now
-
-                # duration = generate_random_time(self.sip_durations)
-                # yield self.env.process(change_state(self, HYG_STAT.sanitizing))
-                # debug(self.env, f'SIP', f'{self.name} - Sanitisierung gestartet')
-                # yield self.env.timeout(duration)
-                # debug(self.env, f'SIP', f'{self.name} - Sanitisierung beendet')
-                # yield self.env.process(change_state(self, HYG_STAT.sanitized))
-                # self.last_clean_time = int(self.env.now)
-
                 yield self.env.process(sip_default(self=self, durations=self.sip_durations))
-
                 self.observer.add_task(task="SIP", resource=self.name, start=convertTime(start), end=convertTime(self.env.now))
 
     def prod_lb(self):
         LB_amount = 2
 
-        while not self.state == HYG_STAT.sanitized:
+        while not self.state == HYG_STAT.cleaned:
+            yield self.env.timeout(convertTime((0, 1)))
+
+        while not self.sip_state == HYG_STAT.sanitized:
             yield self.env.timeout(convertTime((0, 1)))
 
         with self.resource.request() as req:
             yield req
 
             start = self.env.now
-            yield self.env.process(change_state(self, HYG_STAT.production))
+            yield self.env.process(change_state(self, HYG_STAT.production, 'cip'))
+            yield self.env.process(change_state(self, HYG_STAT.production, 'sip'))
             debug(self.env, f'PROD', f'{self.name} - Produktion gestartet')
 
             yield self.env.process(self.fill(wfi_rate=self.wfi_rates['UV042'], fill_rate=self.fill_rates['UV042'], amount=LB_amount))
@@ -214,17 +215,7 @@ class AB(Vessel):
                     yield req2
 
                     start = self.env.now
-
-                    # duration = generate_random_time(self.sip_durations)
-                    # yield self.env.process(change_state(self, HYG_STAT.sanitizing))
-                    # debug(self.env, f'SIP', f'{self.name} - Sanitisierung gestartet')
-                    # yield self.env.timeout(duration)
-                    # debug(self.env, f'SIP', f'{self.name} - Sanitisierung beendet')
-                    # yield self.env.process(change_state(self, HYG_STAT.sanitized))
-                    # self.last_clean_time = int(self.env.now)
-
                     yield self.env.process(sip_default(self=self, durations=self.sip_durations))
-
                     self.observer.add_task(task="SIP", resource=self.name, start=convertTime(start), end=convertTime(self.env.now))
 
     def prod(self, donator: Self):
@@ -262,10 +253,15 @@ class AB(Vessel):
                             yield own_req
 
                             start = self.env.now
-                            while not self.state == HYG_STAT.sanitized or not donator.state == HYG_STAT.production:
+
+                            while not self.state == HYG_STAT.cleaned or not donator.state == HYG_STAT.production:
                                 yield self.env.timeout(convertTime((0, 1)))
 
-                            yield self.env.process(change_state(self, HYG_STAT.production))
+                            while not self.sip_state == HYG_STAT.sanitized or not donator.sip_state == HYG_STAT.production:
+                                yield self.env.timeout(convertTime((0, 1)))
+
+                            yield self.env.process(change_state(self, HYG_STAT.production, 'cip'))
+                            yield self.env.process(change_state(self, HYG_STAT.production, 'sip'))
                             debug(self.env, f'PROD', f'{donator.name} -> {self.name} - Produktion gestartet')
 
                             yield self.env.process(self.fill(wfi_rate=AB_predose_wfi_rate, fill_rate=AB_predose_fill_rate, amount=AB_predose_amount))       # Abfüllbehälter vordosieren
@@ -278,7 +274,7 @@ class AB(Vessel):
                                 yield self.env.timeout(time_between_cycles)
 
                             debug(self.env, f'PROD', f'{donator.name} - Produktion beendet')
-                            yield self.env.process(change_state(donator, HYG_STAT.dirty))
+                            yield self.env.process(change_state(donator, HYG_STAT.dirty, 'cip'))
 
                             rest_volume = AB_enddose_target - self.volume.level
                             yield self.env.process(self.fill(wfi_rate=AB_enddose_wfi_rate, fill_rate=AB_enddose_fill_rate, amount=rest_volume))             # Abfüllbehälter enddosieren
@@ -356,17 +352,7 @@ class Sole_Transfer(Container):
                         yield req3
 
                         start = self.env.now
-
-                        # duration = generate_random_time(self.sip_durations)
-                        # yield self.env.process(change_state(self, HYG_STAT.sanitizing))
-                        # debug(self.env, f'SIP', f'{self.name} - Sanitisierung gestartet')
-                        # yield self.env.timeout(duration)
-                        # debug(self.env, f'SIP', f'{self.name} - Sanitisierung beendet')
-                        # yield self.env.process(change_state(self, HYG_STAT.sanitized))
-                        # self.last_clean_time = int(self.env.now)
-
                         yield self.env.process(sip_default(self=self, durations=self.sip_durations))
-
                         self.observer.add_task(task="SIP", resource=self.name, start=convertTime(start), end=convertTime(self.env.now))
 
 class Partikel(Container):
@@ -420,17 +406,7 @@ class Partikel(Container):
                     yield req2
 
                     start = self.env.now
-
-                    # duration = generate_random_time(self.sip_durations)
-                    # yield self.env.process(change_state(self, HYG_STAT.sanitizing))
-                    # debug(self.env, f'SIP', f'{self.name} - Sanitisierung gestartet')
-                    # yield self.env.timeout(duration)
-                    # debug(self.env, f'SIP', f'{self.name} - Sanitisierung beendet')
-                    # yield self.env.process(change_state(self, HYG_STAT.sanitized))
-                    # self.last_clean_time = int(self.env.now)
-
                     yield self.env.process(sip_default(self=self, durations=self.sip_durations))
-
                     self.observer.add_task(task="SIP", resource=self.name, start=convertTime(start), end=convertTime(self.env.now))
 
 
@@ -494,17 +470,7 @@ class Keimfilter(Container):
                     yield req2
 
                     start = self.env.now
-
-                    # duration = generate_random_time(self.sip_durations)
-                    # yield self.env.process(change_state(self, HYG_STAT.sanitizing))
-                    # debug(self.env, f'SIP', f'{self.name} - Sanitisierung gestartet')
-                    # yield self.env.timeout(duration)
-                    # debug(self.env, f'SIP', f'{self.name} - Sanitisierung beendet')
-                    # yield self.env.process(change_state(self, HYG_STAT.sanitized))
-                    # self.last_clean_time = int(self.env.now)
-
                     yield self.env.process(sip_default(self=self, durations=self.sip_durations))
-
                     self.observer.add_task(task="SIP", resource=self.name, start=convertTime(start), end=convertTime(self.env.now))
 
 

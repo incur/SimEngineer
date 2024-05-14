@@ -68,66 +68,10 @@ def wheel(env, observer, routes):
         except StopIteration:
             pass
 
+        for s in system:
+            system[s].cycle()
 
-        # if current_time == 0:
-        #     env.process(system["Lösebehälter"].cip())
-        #     pass
-        # elif current_time == 1:
-        #     env.process(system["Partikelfiltration"].cip())
-        #     pass
-        # elif current_time == 2:
-        #     env.process(system["Transferstrecke"].cip())
-        #     pass
-        # elif current_time == 3:
-        #     env.process(system["Abfüllbehälter_A"].cip())
-        #     pass
-        # elif current_time == 4:
-        #     env.process(system["Abfüllbehälter_B"].cip())
-        #     pass
-        # elif current_time == 5:
-        #     env.process(system["Keimfilter_A"].cip())
-        #     pass
-        # elif current_time == 6:
-        #     env.process(system["Keimfilter_B"].cip())
-        #     pass
-        # elif current_time == 7:
-        #     env.process(system["Ventilknoten"].cip())
-        #     pass
-
-        # if current_time == 8:
-        #     env.process(system["Lösebehälter"].sip())
-        #     pass
-        # elif current_time == 9:
-        #     env.process(system["Partikelfiltration"].sip())
-        #     pass
-        # elif current_time == 10:
-        #     env.process(system["Transferstrecke"].sip())
-        #     pass
-        # elif current_time == 11:
-        #     env.process(system["Abfüllbehälter_A"].sip())
-        #     pass
-        # elif current_time == 12:
-        #     env.process(system["Abfüllbehälter_B"].sip())
-        #     pass
-        # elif current_time == 13:
-        #     env.process(system["Keimfilter_A"].sip())
-        #     pass
-        # elif current_time == 14:
-        #     env.process(system["Keimfilter_B"].sip())
-        #     pass
-        # elif current_time == 15:
-        #     env.process(system["Ventilknoten"].sip())
-        #     pass
-        # elif current_time == 16:
-        #     # env.process(system["Lösebehälter"].prod_lb())
-        #     pass
-        # elif current_time == 17:
-        #     # env.process(system["Abfüllbehälter_A"].prod(system['Lösebehälter']))
-        #     pass
-
-        wfi.cycle()
-        system["Lösebehälter"].cycle()
-        system["Abfüllbehälter_A"].cycle()
+        wfi.cycle()        
         observer.cycle(current_time)
 
         yield env.timeout(convertTime((0, 1)))
