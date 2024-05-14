@@ -1,9 +1,11 @@
 from modules.observer import Observer
+from modules.tools import convertTime
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
+import plotly.express as px
 
 
 def plot(observer: Observer):
@@ -36,3 +38,14 @@ def plot(observer: Observer):
         axes[i].xaxis.set_major_formatter(x_axis_formatter)
 
     plt.show()
+
+def gantt(observer: Observer):
+    df = pd.DataFrame(observer.tasks)
+    sT = convertTime(observer.sT)
+    s = f"1970-01-01 00:00:00"
+    e = f"1970-01-01 {sT[0]:02}:{sT[1]:02}:{sT[2]:02}"
+
+    fig = px.timeline(df, x_start="Start", x_end="Finish", y="Task", color="Resource")
+    fig.update_layout(xaxis=dict(title='Timestamp', tickformat = '%H:%M:%S', autorange=True, autorangeoptions=dict(minallowed=s, maxallowed=e) ))
+    fig.update_yaxes(autorange="reversed")
+    fig.show()

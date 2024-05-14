@@ -10,7 +10,7 @@ class HYG_STAT(Enum):
     production = 6
 
 def change_state(container, new_state):
-    time_required = 20
+    time_required = convertTime((0, 20))
 
     allowed_transitions = {
         HYG_STAT.dirty: [HYG_STAT.cleaning],

@@ -17,6 +17,7 @@ class Observer:
     def __init__(self, sT: int) -> None:
         self.sT: int = sT
         self.subjects: Dict[str, SubjectData] = {}
+        self.tasks = []
 
     def add_variable(self, name: str, subject: Any, variable_name: str):
         values = np.zeros(self.sT)
@@ -24,6 +25,13 @@ class Observer:
             self.subjects[subject.name] = SubjectData(subject, name, {})
 
         self.subjects[subject.name].variables[variable_name] = values
+
+    def add_task(self, task, resource, start, end):
+        s = f"1970-01-01 {start[0]:02}:{start[1]:02}:{start[2]:02}"
+        f = f"1970-01-01 {end[0]:02}:{end[1]:02}:{end[2]:02}"
+        # self.tasks.append(dict(Task=f"{task}-{resource}", Start=s, Finish=f, Resource=resource))
+        # self.tasks.append(dict(Task=f"{task}", Start=s, Finish=f, Resource=resource))
+        self.tasks.append(dict(Task=f"{resource}", Start=s, Finish=f, Resource=task))
 
     def cycle(self, current_time: int):
         for sub, data in self.subjects.items():

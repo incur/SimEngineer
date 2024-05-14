@@ -1,53 +1,136 @@
 from modules.tools import convertTime, debug
 from modules.wfi_manager import WFIManager
 from modules.container import Container, LB, AB, Partikel, Sole_Transfer, Keimfilter, VK
-from modules.make_plots import plot
+from modules.make_plots import plot, gantt
 from modules.observer import Observer
 from modules.states import HYG_STAT
+from modules.routes import Routes
 
 import simpy
 
 
-SIM_TIME = convertTime((5, 0, 0))
+SIM_TIME = convertTime((20, 0, 0))
 
 
 def main():
     env = simpy.Environment()
     observer = Observer(sT=SIM_TIME)
+    routes = Routes(env=env)
     
-    env.process(wheel(env, observer))
+    env.process(wheel(env, observer, routes))
     env.run(until=SIM_TIME)
 
     plot(observer)
+    gantt(observer)
 
-def wheel(env, observer):
-    wfi = WFIManager(env, SIM_TIME, 45, observer)
-    Lösebehälter = LB(env, SIM_TIME, '2010_A', wfi, observer)
-    Partikelfiltration = Partikel(env, SIM_TIME, '2011_A', wfi, observer)
-    Transferstrecke = Sole_Transfer(env, SIM_TIME, '2012_A', wfi, observer)
-    Abfüllbehälter_A = AB(env, SIM_TIME, '2020_A', wfi, observer)
-    Abfüllbehälter_B = AB(env, SIM_TIME, '2020_B', wfi, observer)
-    Keimfilter_A = Keimfilter(env, SIM_TIME, '2021_A', wfi, observer)
-    Keimfilter_B = Keimfilter(env, SIM_TIME, '2021_B', wfi, observer)
-    Ventilknoten = VK(env, SIM_TIME, '2030_A', wfi, observer)
+def wheel(env, observer, routes):
+    wfi = WFIManager(env, SIM_TIME, 40, observer)
+    system = {
+        "Lösebehälter": LB(env, SIM_TIME, 'LB', wfi, observer, routes),
+        "Partikelfiltration": Partikel(env, SIM_TIME, 'Partikel', wfi, observer, routes),
+        "Transferstrecke": Sole_Transfer(env, SIM_TIME, 'Transfer', wfi, observer, routes),
+        "Abfüllbehälter_A": AB(env, SIM_TIME, 'AB1', wfi, observer, routes),
+        "Abfüllbehälter_B": AB(env, SIM_TIME, 'AB2', wfi, observer, routes),
+        "Keimfilter_A": Keimfilter(env, SIM_TIME, 'Keim1', wfi, observer, routes),
+        "Keimfilter_B": Keimfilter(env, SIM_TIME, 'Keim2', wfi, observer, routes),
+        "Ventilknoten": VK(env, SIM_TIME, 'VK', wfi, observer, routes),
+    }
+
+    stack = [
+        env.process(system["Lösebehälter"].cip()),
+        env.process(system["Lösebehälter"].sip()),
+        env.process(system["Lösebehälter"].prod_lb()),
+        env.process(system["Abfüllbehälter_A"].cip()),
+        env.process(system["Abfüllbehälter_A"].sip()),
+        env.process(system["Ventilknoten"].cip()),
+        env.process(system["Ventilknoten"].sip()),
+        env.process(system["Transferstrecke"].cip()),
+        env.process(system["Transferstrecke"].sip()),
+        env.process(system["Abfüllbehälter_A"].prod(system['Lösebehälter'])),
+        env.process(system["Keimfilter_A"].cip()),
+        env.process(system["Keimfilter_A"].sip()),
+        env.process(system["Partikelfiltration"].cip()),
+        env.process(system["Partikelfiltration"].sip()),
+
+        # env.process(system["Abfüllbehälter_B"].cip()),
+        # env.process(system["Keimfilter_B"].cip()),
+        # env.process(system["Abfüllbehälter_B"].sip()),
+        # env.process(system["Keimfilter_B"].sip()),
+    ]
+
+    stack_iter = iter(stack)
 
     while True:
         current_time = int(env.now)
-        
-        if current_time == 0:
-            env.process(Lösebehälter.cip_beh())
-            # env.process(Abfüllbehälter_A.cip_beh())
-            # env.process(Abfüllbehälter_A.sip(duration=convertTime((30, 0))))
-            env.process(Lösebehälter.sip())
-            # env.process(Lösebehälter.prod_lb())
-            # env.process(Abfüllbehälter_A.prod(Lösebehälter))
+
+        try:
+            next(stack_iter)
+        except StopIteration:
+            pass
+
+
+        # if current_time == 0:
+        #     env.process(system["Lösebehälter"].cip())
+        #     pass
+        # elif current_time == 1:
+        #     env.process(system["Partikelfiltration"].cip())
+        #     pass
+        # elif current_time == 2:
+        #     env.process(system["Transferstrecke"].cip())
+        #     pass
+        # elif current_time == 3:
+        #     env.process(system["Abfüllbehälter_A"].cip())
+        #     pass
+        # elif current_time == 4:
+        #     env.process(system["Abfüllbehälter_B"].cip())
+        #     pass
+        # elif current_time == 5:
+        #     env.process(system["Keimfilter_A"].cip())
+        #     pass
+        # elif current_time == 6:
+        #     env.process(system["Keimfilter_B"].cip())
+        #     pass
+        # elif current_time == 7:
+        #     env.process(system["Ventilknoten"].cip())
+        #     pass
+
+        # if current_time == 8:
+        #     env.process(system["Lösebehälter"].sip())
+        #     pass
+        # elif current_time == 9:
+        #     env.process(system["Partikelfiltration"].sip())
+        #     pass
+        # elif current_time == 10:
+        #     env.process(system["Transferstrecke"].sip())
+        #     pass
+        # elif current_time == 11:
+        #     env.process(system["Abfüllbehälter_A"].sip())
+        #     pass
+        # elif current_time == 12:
+        #     env.process(system["Abfüllbehälter_B"].sip())
+        #     pass
+        # elif current_time == 13:
+        #     env.process(system["Keimfilter_A"].sip())
+        #     pass
+        # elif current_time == 14:
+        #     env.process(system["Keimfilter_B"].sip())
+        #     pass
+        # elif current_time == 15:
+        #     env.process(system["Ventilknoten"].sip())
+        #     pass
+        # elif current_time == 16:
+        #     # env.process(system["Lösebehälter"].prod_lb())
+        #     pass
+        # elif current_time == 17:
+        #     # env.process(system["Abfüllbehälter_A"].prod(system['Lösebehälter']))
+        #     pass
 
         wfi.cycle()
-        Lösebehälter.cycle()
-        Abfüllbehälter_A.cycle()
+        system["Lösebehälter"].cycle()
+        system["Abfüllbehälter_A"].cycle()
         observer.cycle(current_time)
 
-        yield env.timeout(1)
+        yield env.timeout(convertTime((0, 1)))
 
 if __name__ == '__main__':
     main()
